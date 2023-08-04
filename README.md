@@ -1,7 +1,6 @@
 # Installation
 ```
-$ git clone git@github.com:ywatanabe1989/emacs-gpt.git
-$ mv emacs-gpt ~/.emacs.d/lisp/emacs-gpt
+$ git clone git@github.com:ywatanabe1989/emacs-gpt.git ~/.emacs.d/lisp/emacs-gpt
 ```
 
 # Emacs config

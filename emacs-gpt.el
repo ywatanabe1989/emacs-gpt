@@ -1,10 +1,10 @@
-;;; gpt.el --- ChatGPT client for Emacs -*- lexical-binding: t; -*-
+;;; emacs-gpt.el --- ChatGPT client for Emacs -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023 Yusuke Watanabe
 
 ;; Author: Yusuke Watanabe <ywata1989@gmail.com>
 ;; Version: 1.0
-;; Keywords: gpt3, language
+;; Keywords: gpt, language
 ;; URL: https://github.com/ywatanabe/emacs-gpt
 ;; License: MIT
 ;; SPDX-License-Identifier: MIT
@@ -68,24 +68,32 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
   (unless (process-live-p process)
     (message "GPT: Finished running command.")))
 
+
 ;; (defun gpt-set-process-sentinel (process timer prompt-file)
 ;;   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
 ;;   (set-process-sentinel process (lambda (_process _event)
 ;;                                   (cancel-timer timer)
-;;                                   (delete-file prompt-file))))
-
-
-;; no, it does not work. please simply scroll to the last page.
+;;                                   (delete-file prompt-file)
+;;                                   (with-current-buffer (process-buffer process)
+;;                                     (goto-char (point-max))
+;;                                     (when (get-buffer-window (process-buffer process) 0)
+;;                                       (set-window-point (get-buffer-window (process-buffer process) 0) (point-max)))))))
 
 (defun gpt-set-process-sentinel (process timer prompt-file)
   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
   (set-process-sentinel process (lambda (_process _event)
                                   (cancel-timer timer)
                                   (delete-file prompt-file)
-                                  (with-current-buffer (process-buffer process)
-                                    (goto-char (point-max))
-                                    (when (get-buffer-window (process-buffer process) 0)
-                                      (set-window-point (get-buffer-window (process-buffer process) 0) (point-max)))))))
+                                  (let ((buffer (process-buffer process)))
+                                    (with-current-buffer buffer
+                                      (goto-char (point-max))
+                                      (when (re-search-backward "^============================================================\n\nGPT" nil t)
+                                        (beginning-of-line))
+                                      (let ((point (point)))
+                                        (when-let ((window (get-buffer-window buffer 0)))
+                                          (set-window-point window point)
+                                          (with-selected-window window
+                                            (recenter 0)))))))))
 
 (defun gpt-create-prompt-file (buffer)
   "Create a prompt file with the text in BUFFER and return its file name."
@@ -106,9 +114,6 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
       (insert text)
       (gpt-run-buffer buffer))
     (display-buffer buffer)))
-
-
-
 
 (defun gpt-clear-history ()
   "Clear the GPT conversation history file (history.json)."

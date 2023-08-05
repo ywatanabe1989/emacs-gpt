@@ -1,0 +1,11 @@
+Hello.
+
+I am using GPT-4 from Emacs.
+
+C-M-g (gpt-on-region) inputs the selected region to GPT-4.
+
+C-S-M-g (gpt-clear-history) clears the chat history.
+
+Okay, let's start new chat.
+
+Of course, I can copy & paste your output.

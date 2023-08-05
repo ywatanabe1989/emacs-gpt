@@ -58,8 +58,8 @@ def run_gpt(
 
     # history.reverse()
 
-    # print("---")
     print()
+    print("\n" + "=" * 60 + "\n")    
     for ii in range(len(history) // 2):
         gpt_message = (
             history[2 * ii + 1]["content"]
@@ -79,7 +79,6 @@ def run_gpt(
             print("YOU: " + your_message)
             print("\n" + "=" * 60 + "\n")
             # print()
-        print()
         print("GPT: " + gpt_message)
         print("\n" + "=" * 60 + "\n")
 

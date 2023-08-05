@@ -4,7 +4,7 @@ $ git clone git@github.com:ywatanabe1989/emacs-gpt.git ~/.emacs.d/lisp/emacs-gpt
 ```
 
 # Demo
-[![Watch the video](doc/screenshot.png)](doc/demo.mp4)
+[![Watch the video](https://img.youtube.com/vi/5sbtr11iLVY/maxresdefault.jpg)](https://youtu.be/5sbtr11iLVY)
 
 # Emacs config
 ``` elisp

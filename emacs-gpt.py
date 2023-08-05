@@ -2,6 +2,7 @@ import argparse
 import openai
 import json
 import os
+import time
 
 
 def run_gpt(
@@ -30,12 +31,26 @@ def run_gpt(
 
     # Depending on the api_type use the appropriate API
     if api_type == "chat":
-        response = openai.ChatCompletion.create(
-            model=engine,
-            messages=history[-1000:],  # Adjust this value as per your requirement
-            max_tokens=int(max_tokens),
-            temperature=float(temperature),
-        )
+        while True:
+            try:
+                response = openai.ChatCompletion.create(
+                    model=engine,
+                    messages=history[-10:],  # Adjust this value as per your requirement
+                    max_tokens=int(max_tokens),
+                    temperature=float(temperature),
+                )
+                # if successful, break the loop
+                break
+            except openai.error.InvalidRequestError as e:
+                if "context length is" in str(e):
+                    # Reduce the history and try again by excluding the first message
+                    history = history[1:]
+                else:
+                    raise e
+
+            except openai.error.RateLimitError as e:
+                time.sleep(1)
+
         # Update the history with assistant's message
         history.append(
             {
@@ -56,31 +71,45 @@ def run_gpt(
         with open(history_file, "w") as f:
             json.dump(history, f)
 
-    # history.reverse()
-
     print()
-    print("\n" + "=" * 60 + "\n")    
-    for ii in range(len(history) // 2):
-        gpt_message = (
-            history[2 * ii + 1]["content"]
-            .replace("Assistant: ", "")
-            .replace("assistant: ", "")
-            # .replace("\n\n", "")
-        )
-
-        your_message = (
-            history[2 * ii]["content"]
-            .replace("User: ", "")
+    print("\n" + "=" * 60 + "\n")
+    for response in history:
+        role = response["role"]
+        role = {"user": "YOU", "assistant": "GPT"}[role]
+        content = response["content"]\
+            .replace("Assistant: ", "")\
+            .replace("assistant: ", "")\
+            .replace("User: ", "")\
             .replace("user: ", "")
-            .replace("\n\n", "")
-        )
+        if role == "YOU":
+            content.replace("\n\n", "")
 
-        if ii != 0:
-            print("YOU: " + your_message)
-            print("\n" + "=" * 60 + "\n")
-            # print()
-        print("GPT: " + gpt_message)
+        print(role)
+        print()
+        print(content)
         print("\n" + "=" * 60 + "\n")
+        
+    # for ii in range(len(history) // 2):
+    #     gpt_message = (
+    #         history[2 * ii + 1]["content"]
+    #         .replace("Assistant: ", "")
+    #         .replace("assistant: ", "")
+    #         # .replace("\n\n", "")
+    #     )
+
+    #     your_message = (
+    #         history[2 * ii]["content"]
+    #         .replace("User: ", "")
+    #         .replace("user: ", "")
+    #         .replace("\n\n", "")
+    #     )
+
+    #     if ii != 0:
+    #         print("YOU: " + your_message)
+    #         print("\n" + "=" * 60 + "\n")
+    #         # print()
+    #     print("GPT: " + gpt_message)
+    #     print("\n" + "=" * 60 + "\n")
 
 
 if __name__ == "__main__":

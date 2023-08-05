@@ -68,11 +68,24 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
   (unless (process-live-p process)
     (message "GPT: Finished running command.")))
 
+;; (defun gpt-set-process-sentinel (process timer prompt-file)
+;;   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
+;;   (set-process-sentinel process (lambda (_process _event)
+;;                                   (cancel-timer timer)
+;;                                   (delete-file prompt-file))))
+
+
+;; no, it does not work. please simply scroll to the last page.
+
 (defun gpt-set-process-sentinel (process timer prompt-file)
   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
   (set-process-sentinel process (lambda (_process _event)
                                   (cancel-timer timer)
-                                  (delete-file prompt-file))))
+                                  (delete-file prompt-file)
+                                  (with-current-buffer (process-buffer process)
+                                    (goto-char (point-max))
+                                    (when (get-buffer-window (process-buffer process) 0)
+                                      (set-window-point (get-buffer-window (process-buffer process) 0) (point-max)))))))
 
 (defun gpt-create-prompt-file (buffer)
   "Create a prompt file with the text in BUFFER and return its file name."
@@ -94,6 +107,9 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
       (gpt-run-buffer buffer))
     (display-buffer buffer)))
 
+
+
+
 (defun gpt-clear-history ()
   "Clear the GPT conversation history file (history.json)."
   (interactive)
@@ -106,6 +122,11 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
     (when (file-exists-p history-file)
       (delete-file history-file))
     (message "GPT conversation history file cleared.")))
+
+(defun gpt-quit ()
+  "Quit the GPT buffer."
+  (interactive)
+  (kill-buffer (current-buffer)))(define-key gpt-mode-map (kbd "q") 'gpt-quit)
 
 (provide 'emacs-gpt)
 

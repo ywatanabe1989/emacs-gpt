@@ -56,20 +56,20 @@ def run_gpt(
         with open(history_file, "w") as f:
             json.dump(history, f)
 
-    history.reverse()
+    # history.reverse()
 
     # print("---")
     print()
     for ii in range(len(history) // 2):
         gpt_message = (
-            history[2 * ii]["content"]
+            history[2 * ii + 1]["content"]
             .replace("Assistant: ", "")
             .replace("assistant: ", "")
-            .replace("\n\n", "")
+            # .replace("\n\n", "")
         )
 
         your_message = (
-            history[2 * ii + 1]["content"]
+            history[2 * ii]["content"]
             .replace("User: ", "")
             .replace("user: ", "")
             .replace("\n\n", "")
@@ -77,6 +77,7 @@ def run_gpt(
 
         if ii != 0:
             print("YOU: " + your_message)
+            print("\n" + "=" * 60 + "\n")
             # print()
         print()
         print("GPT: " + gpt_message)

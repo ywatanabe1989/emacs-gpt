@@ -1,0 +1,7 @@
+Hello.
+
+I am using GPT-4 from Emacs.
+
+Of course, I can copy & paste your output.
+
+

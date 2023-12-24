@@ -51,7 +51,6 @@
   "Major mode for GPT.
 
 \\{gpt-mode-map}")
-
 (defun gpt-start-process (prompt-file output-buffer)
   "Start the GPT process with the given PROMPT-FILE and OUTPUT-BUFFER.
 Use `gpt-script-path' as the executable and pass the other arguments as a list."
@@ -105,8 +104,9 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
 (defun gpt-on-region (beg end)
   "Run GPT command on region between BEG and END."
   (interactive "r")
-  (let* ((buffer (get-buffer-create "*GPT*"))
-         (text (buffer-substring-no-properties beg end)))
+  (let* ((additional-prompt (read-string "Enter additional text: "))
+         (buffer (get-buffer-create "*GPT*"))
+         (text (concat additional-prompt "\n\n" (buffer-substring-no-properties beg end))))
     (with-current-buffer buffer
       (unless (eq major-mode 'gpt-mode)
         (gpt-mode))
@@ -114,6 +114,32 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
       (insert text)
       (gpt-run-buffer buffer))
     (display-buffer buffer)))
+
+;; (defun gpt-on-region (beg end)
+;;   "Run GPT command on region between BEG and END."
+;;   (interactive "r")
+;;   (let* ((buffer (get-buffer-create "*GPT*"))
+;;          (text (buffer-substring-no-properties beg end)))
+;;     (with-current-buffer buffer
+;;       (unless (eq major-mode 'gpt-mode)
+;;         (gpt-mode))
+;;       (erase-buffer)
+;;       (insert text)
+;;       (gpt-run-buffer buffer))
+;;     (display-buffer buffer)))
+
+(defun gpt-truncate-history ()
+  "Truncate the GPT conversation history to the latest 5 entries."
+  (interactive)
+  (let* ((history-file (expand-file-name "history.json" (file-name-directory gpt-script-path))))
+    (when (file-exists-p history-file)
+      (call-process "python" nil nil nil "-c"
+                    (concat "import json; "
+                            "with open('" history-file "', 'r') as file: "
+                            "history = json.load(file); "
+                            "history = history[-5:]; "
+                            "with open('" history-file "', 'w') as file: "
+                            "json.dump(history, file)")))))
 
 (defun gpt-clear-history ()
   "Clear the GPT conversation history file (history.json)."
@@ -131,7 +157,16 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
 (defun gpt-quit ()
   "Quit the GPT buffer."
   (interactive)
-  (kill-buffer (current-buffer)))(define-key gpt-mode-map (kbd "q") 'gpt-quit)
+  (kill-buffer (current-buffer)))(define-key gpt-mode-map (kbd "C-q") 'gpt-quit)
+
+;; (defun gpt-quit ()
+;;   "Quit the GPT buffer."
+;;   (interactive)
+;;   (kill-buffer (current-buffer)))
+
+;; how can i reset this kbd mapping?
+;; (define-key gpt-mode-map (kbd "q") 'gpt-quit)
+(define-key gpt-mode-map (kbd "q") nil)
 
 (provide 'emacs-gpt)
 

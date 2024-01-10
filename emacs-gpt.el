@@ -51,6 +51,7 @@
   "Major mode for GPT.
 
 \\{gpt-mode-map}")
+
 (defun gpt-start-process (prompt-file output-buffer)
   "Start the GPT process with the given PROMPT-FILE and OUTPUT-BUFFER.
 Use `gpt-script-path' as the executable and pass the other arguments as a list."
@@ -67,16 +68,21 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
   (unless (process-live-p process)
     (message "GPT: Finished running command.")))
 
-
 ;; (defun gpt-set-process-sentinel (process timer prompt-file)
 ;;   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
 ;;   (set-process-sentinel process (lambda (_process _event)
 ;;                                   (cancel-timer timer)
 ;;                                   (delete-file prompt-file)
-;;                                   (with-current-buffer (process-buffer process)
-;;                                     (goto-char (point-max))
-;;                                     (when (get-buffer-window (process-buffer process) 0)
-;;                                       (set-window-point (get-buffer-window (process-buffer process) 0) (point-max)))))))
+;;                                   (let ((buffer (process-buffer process)))
+;;                                     (with-current-buffer buffer
+;;                                       (goto-char (point-max))
+;;                                       (when (re-search-backward "^============================================================\n\nGPT" nil t)
+;;                                         (beginning-of-line))
+;;                                       (let ((point (point)))
+;;                                         (when-let ((window (get-buffer-window buffer 0)))
+;;                                           (set-window-point window point)
+;;                                           (with-selected-window window
+;;                                             (recenter 0)))))))))
 
 (defun gpt-set-process-sentinel (process timer prompt-file)
   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
@@ -93,6 +99,21 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
                                           (set-window-point window point)
                                           (with-selected-window window
                                             (recenter 0)))))))))
+
+;; (defun gpt-set-process-sentinel (process timer prompt-file)
+;;   "Set PROCESS sentinel to delete TIMER and PROMPT-FILE when process finishes."
+;;   (set-process-sentinel process (lambda (_process _event)
+;;                                   (cancel-timer timer)
+;;                                   (delete-file prompt-file)
+;;                                   (let ((buffer (process-buffer process)))
+;;                                     (with-current-buffer buffer
+;;                                       (goto-char (point-max))
+;;                                       (when (re-search-backward "^============================================================\n\nGPT" nil t)
+;;                                         (beginning-of-line))
+;;                                       (let ((point (point)))
+;;                                         (when-let ((window (get-buffer-window buffer 0)))
+;;                                           (set-window-point window point) ; [REVISED]
+;;                                           (recenter 0))))))) ; [REVISED]
 
 (defun gpt-create-prompt-file (buffer)
   "Create a prompt file with the text in BUFFER and return its file name."
@@ -112,21 +133,9 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
         (gpt-mode))
       (erase-buffer)
       (insert text)
+      (gpt-truncate-history)
       (gpt-run-buffer buffer))
     (display-buffer buffer)))
-
-;; (defun gpt-on-region (beg end)
-;;   "Run GPT command on region between BEG and END."
-;;   (interactive "r")
-;;   (let* ((buffer (get-buffer-create "*GPT*"))
-;;          (text (buffer-substring-no-properties beg end)))
-;;     (with-current-buffer buffer
-;;       (unless (eq major-mode 'gpt-mode)
-;;         (gpt-mode))
-;;       (erase-buffer)
-;;       (insert text)
-;;       (gpt-run-buffer buffer))
-;;     (display-buffer buffer)))
 
 (defun gpt-truncate-history ()
   "Truncate the GPT conversation history to the latest 5 entries."
@@ -146,10 +155,8 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
   (interactive)
   (let* ((history-file (expand-file-name "history.json" (file-name-directory gpt-script-path)))
          (gpt-buffer (get-buffer "*GPT*")))
-    ;; If the *GPT* buffer is open, close it.
     (when gpt-buffer
       (kill-buffer gpt-buffer))
-    ;; If history file exists, delete it.
     (when (file-exists-p history-file)
       (delete-file history-file))
     (message "GPT conversation history file cleared.")))
@@ -157,16 +164,10 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
 (defun gpt-quit ()
   "Quit the GPT buffer."
   (interactive)
-  (kill-buffer (current-buffer)))(define-key gpt-mode-map (kbd "C-q") 'gpt-quit)
+  (kill-buffer (current-buffer)))
 
-;; (defun gpt-quit ()
-;;   "Quit the GPT buffer."
-;;   (interactive)
-;;   (kill-buffer (current-buffer)))
-
-;; how can i reset this kbd mapping?
-;; (define-key gpt-mode-map (kbd "q") 'gpt-quit)
 (define-key gpt-mode-map (kbd "q") nil)
+(define-key gpt-mode-map (kbd "C-q") 'gpt-quit)
 
 (provide 'emacs-gpt)
 

@@ -5,15 +5,30 @@ import os
 import time
 
 ADDITIONAL_PROMPT = """
-Background: Now, I am using you as a debugging tool.
-Rule #1: When debug is required, please only return the revised script.
-Rule #2: Please highlight the issue fixing lines between the original and revised using "[REVISED #1]" tag as comments.
-Rule #3: When [REVISED #X] tags are already included, please increment them as [REVISED #X+1].
-Rule #4: When [REVISED #X] tags are removed, plese keep them as they are; you don't need to add the [REVISED #X] tags for them anymore.
-Rule #5: When no revision is added, please not return any code but just return "No revision needed."
-Rule #3: However, you shold avoid addiing unnecessary comments on the code; it's just durty.
-Rule #4: Your comments are not nesseccary as they are just distructive.
-Rule #5: When yes/no question is delivered, please respond it with the Point, Reason, and Example (PRE) method in about three sentences.
+##########################
+GEENRAL INSTRUCTION STARTS
+##########################
+Now, I am using you as (No. 1) a question answering tool, (No. 2) a debugging tool for programming, or (No. 3) a revision tool for scientific manuscripts. Your response must align with the following rules.
+
+[Rules for No.1: Question Answering]
+Rule 1-1: When question is included in the input text, please respond it with the PRE method: Point, Reason, and Example in about three sentences in total with bullet points like this:
+- Point: (key message here)
+- Reason: (the primary reason here)
+- Example: (an example here)
+
+[Rules for No.2: Debugging]
+1: When code is input, include your revised script if necessary.
+2: When [REVISED] tags are already included, please remove them as they are not needed any more.
+3: Highlight the issue fixing lines using "[REVISED]" tag as tailing comments.
+
+[Rules for No.3: Scientific Writer]
+1: If revision for scieintific writing seems required, please use this prompt for you. "You are an esteemed professor in the scientific field, based in the United States. The subsequent passages originate from a student whose first language is not English. Please proofread these sentences in a manner that retains their original syntax as much as possible, yet conforms to the language style typical of a scholarly article in biology. Please do not modify any sections that do not pose linguistic challenges. Please keep the original sentences as much as possible and minimize your revisions because if you paraphrase the expressions all the time, this revision process will never end. I don't need any comments other than the revised text. The source sentences are as follows:"
+
+[General Rules]
+1: You shold avoid addiing unnecessary comments as I will be distructed.
+########################
+GEENRAL INSTRUCTION ENDS
+########################
 """
 
 
@@ -35,10 +50,13 @@ def run_gpt(
     prompt = ADDITIONAL_PROMPT + prompt
 
     # Load the history
+    N_MAX_HISTORY = 50
     if api_type == "chat":
         if os.path.exists(history_file):
             with open(history_file, "r") as f:
                 history = json.load(f)
+                # Truncate history to keep up to 50 past interactions [REVISED]
+                history = history[-N_MAX_HISTORY:]
         else:
             history = []
         history.append({"role": "user", "content": prompt})

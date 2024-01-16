@@ -1,6 +1,5 @@
 import argparse
 import openai
-from openai import OpenAI
 import json
 import os
 import time
@@ -98,6 +97,9 @@ def run_gpt(
     # SciWrite is run on gpt-4
     engine = {"SciWrite": "gpt-4"
               }.get(task_type, engine)
+    
+    # if task_type == "SciWrite":
+    #     engine = "gpt-4"
 
     # Load the history
     if api_type == "chat":
@@ -112,35 +114,39 @@ def run_gpt(
 
     # Set the api key
     openai.api_key = api_key
-    client = OpenAI()
 
     # Depending on the api_type use the appropriate API
     if api_type == "chat":
         while True:
             try:
-                response = client.chat.completions.create(
+                response = openai.ChatCompletion.create(
                     model=engine,
                     messages=history[-N_HISTORY:],
                     max_tokens=int(max_tokens),
                     temperature=float(temperature),
                 )
                 break
+            except openai.error.InvalidRequestError as e:
+                if "context length is" in str(e):
+                    # Reduce the history and try again by excluding the first message
+                    history = history[1:]
+                    print(e)
+                else:
+                    raise e
 
-            except Exception as e:
+            except openai.error.RateLimitError as e:
                 print(e)
-                return e
+                time.sleep(3)
 
         # Update the history with assistant's message
         history.append(
             {
                 "role": "assistant",
-                "content": response.choices[0].message.content,
+                "content": response["choices"][0]["message"]["content"],
             }
         )
-            
-
     else:
-        response = client.chat.completions.create(
+        response = openai.Completion.create(
             engine=engine,
             prompt=prompt,
             max_tokens=int(max_tokens),

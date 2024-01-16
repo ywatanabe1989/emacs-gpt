@@ -35,14 +35,13 @@
 (defvar gpt-openai-use-chat-api t
   "If non-nil, use the chat completion API.  Otherwise, use the prompt completion API.")
 
-
-(defun gpt-run-buffer (buffer task-type) ; task-type should be optional
+(defun gpt-run-buffer (buffer)
   "Run GPT command with BUFFER text as input and append output stream to output-buffer."
   (with-current-buffer buffer
     (goto-char (point-max))
     (font-lock-fontify-buffer)
     (let* ((prompt-file (gpt-create-prompt-file buffer))
-           (process (gpt-start-process prompt-file buffer task-type))
+           (process (gpt-start-process prompt-file buffer))
            (timer (gpt-start-timer process)))
       (gpt-set-process-sentinel process timer prompt-file)
       (message "GPT: Running...")
@@ -53,37 +52,11 @@
 
 \\{gpt-mode-map}")
 
-
-(defun gpt-select-task-type ()
-  "Prompt the user to select a task type for the GPT model."
-  (interactive)
-  (let ((task-type (read-string "Enter additional text or just hit (f)ix / (r)efactor /(s)ciwrite / (c)orrect: ")))
-    (cond
-     ((string= task-type "f") (message "Fix"))
-     ((string= task-type "r") (message "Refactor"))     
-     ((string= task-type "s") (message "SciWrite"))     
-     ((string= task-type "c") (message "Correct"))     
-     (t (message "%s" task-type)))))
-
-
-(defun gpt-start-process (prompt-file output-buffer &optional task-type)
+(defun gpt-start-process (prompt-file output-buffer)
   "Start the GPT process with the given PROMPT-FILE and OUTPUT-BUFFER.
 Use `gpt-script-path' as the executable and pass the other arguments as a list."
-  (let* (
-         (task-type (or task-type "")) ; Set default value of task-type to ""         
-         (history-file (expand-file-name "history.json" (file-name-directory gpt-script-path)))
-         (process (start-process "gpt-process" output-buffer
-                                 "python"
-                                 gpt-script-path
-                                 gpt-openai-key
-                                 gpt-openai-engine
-                                 gpt-openai-max-tokens
-                                 gpt-openai-temperature
-                                 (if gpt-openai-use-chat-api "chat" "prompt")
-                                 prompt-file
-                                 history-file
-                                 task-type
-                                 )))
+  (let* ((history-file (expand-file-name "history.json" (file-name-directory gpt-script-path)))
+         (process (start-process "gpt-process" output-buffer "python" gpt-script-path gpt-openai-key gpt-openai-engine gpt-openai-max-tokens gpt-openai-temperature (if gpt-openai-use-chat-api "chat" "prompt") prompt-file history-file)))
     process))
 
 (defun gpt-start-timer (process)
@@ -121,43 +94,17 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
 (defun gpt-on-region (beg end)
   "Run GPT command on region between BEG and END."
   (interactive "r")
-  (let* ((task-type (gpt-select-task-type))
-         ;; (additional-prompt (read-string "Enter additional text (optional): "))
+  (let* ((additional-prompt (read-string "Enter additional text: "))
          (buffer (get-buffer-create "*GPT*"))
-         (region-text (buffer-substring-no-properties beg end))
-         (text (concat task-type "\n\n" region-text))
-         )
+         (text (concat additional-prompt "\n\n" (buffer-substring-no-properties beg end))))
     (with-current-buffer buffer
       (unless (eq major-mode 'gpt-mode)
         (gpt-mode))
       (erase-buffer)
       (insert text)
       (gpt-truncate-history)
-      (gpt-run-buffer buffer task-type))
-
-    (display-buffer buffer)
-    (copy-last-gpt-output-to-kill-ring)              
-    ))
-
-
-(defun copy-last-gpt-output-to-kill-ring ()
-  "Copy the last GPT output from the *GPT* buffer to the kill ring."
-  (interactive)
-  (with-current-buffer "*GPT*"
-    (goto-char (point-max))
-    (let ((delimiter "============================================================\n"))
-      (if (search-backward delimiter nil t)
-          (if (search-backward delimiter nil t)              
-              (progn
-                (forward-line 1)
-                (let ((start (point))
-                      (end (point-max)))
-                  ;; Calculate the position to remove the last three lines
-                  (let* ((lines (split-string (buffer-substring-no-properties start end) "\n"))
-                         (lines-to-keep (- (length lines) 3)))
-                    (setq output (mapconcat 'identity (seq-subseq lines 0 lines-to-keep) "\n")))
-                  (kill-new output)
-                  (message "Output copied to kill ring."))))))))
+      (gpt-run-buffer buffer))
+    (display-buffer buffer)))
 
 (defun gpt-truncate-history ()
   "Truncate the GPT conversation history to the latest 5 entries."
@@ -194,4 +141,3 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
 (provide 'emacs-gpt)
 
 ;;; emacs-gpt.el ends here
-

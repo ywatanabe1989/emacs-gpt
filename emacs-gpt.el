@@ -54,16 +54,66 @@
 \\{gpt-mode-map}")
 
 
-(defun gpt-select-task-type ()
-  "Prompt the user to select a task type for the GPT model."
+
+;; if initial-input is f, return Fix
+;; (defun gpt-select-task-type (&optional initial-input)
+;;   "Prompt the user to select a task type for the GPT model after a short delay.
+;; If INITIAL-INPUT is non-nil, it's used as the initial input for the prompt."
+;;   (interactive)
+;;   (unless (minibufferp)
+;;     (let ((task-type (read-string "Enter task type (f)ix / (r)efactor /(s)ciwrite / (c)orrect / (d)ocstring or custom: " initial-input)))
+;;       (if (not (string-empty-p task-type))
+;;           task-type
+;;         (message "No task type selected; defaulting to custom.")
+;;         "custom"))))
+
+(defun gpt-select-task-type (&optional initial-input)
+  "Prompt the user to select a task type for the GPT model after a short delay.
+If INITIAL-INPUT is non-nil, it's used as the initial input for the prompt."
   (interactive)
-  (let ((task-type (read-string "Enter additional text or just hit (f)ix / (r)efactor /(s)ciwrite / (c)orrect: ")))
-    (cond
-     ((string= task-type "f") (message "Fix"))
-     ((string= task-type "r") (message "Refactor"))     
-     ((string= task-type "s") (message "SciWrite"))     
-     ((string= task-type "c") (message "Correct"))     
-     (t (message "%s" task-type)))))
+  (unless (minibufferp)
+    (let ((task-type (read-string "Enter task type (f)ix / (r)efactor /(s)ciwrite / (c)orrect / (d)ocstring or custom: " initial-input)))
+      (cond
+       ((string= task-type "f") "Fix")
+       ((string= task-type "r") "Refactor")
+       ((string= task-type "s") "Sciwrite")
+       ((string= task-type "c") "Correct")
+       ((string= task-type "d") "Docstring")                     
+       ((not (string-empty-p task-type)) task-type)
+       (t
+        (message "No task type selected; defaulting to custom.")
+        "custom")))))
+
+
+
+
+;; (add-hook 'gpt-mode-hook (lambda () (ivy-mode -1)))
+;; (add-hook 'gpt-mode-hook (lambda () (auto-composition-mode -1)))
+;; (add-hook 'gpt-mode-hook (lambda () (column-number-mode -1)))
+;; (add-hook 'gpt-mode-hook (lambda () (counsel-mode -1)))
+;; (add-hook 'gpt-mode-hook (lambda () (cua-mode -1)))
+
+(defun gpt-on-region (beg end)
+  "Run GPT command on region between BEG and END."
+  (interactive "r")
+  ;; (ivy-mode -1)
+  ;; (auto-composition-mode -1)
+  ;; (consel-mode - 1)
+  ;; (cua-mode -1)
+  (let* ((region-text (buffer-substring-no-properties beg end))
+         (task-type (gpt-select-task-type))
+         (buffer (get-buffer-create "*GPT*"))
+         (text (concat task-type "\n\n" region-text)))
+    (with-current-buffer buffer
+      (unless (eq major-mode 'gpt-mode)
+        (gpt-mode))
+      (erase-buffer)
+      (insert text)
+      (gpt-truncate-history))
+    ;; If the task type is nil or empty, don't run the buffer
+    (unless (string-empty-p task-type)
+      (gpt-run-buffer buffer task-type)
+      (display-buffer buffer))))
 
 
 (defun gpt-start-process (prompt-file output-buffer &optional task-type)
@@ -118,26 +168,27 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
       (insert-buffer-substring buffer))
     file))
 
-(defun gpt-on-region (beg end)
-  "Run GPT command on region between BEG and END."
-  (interactive "r")
-  (let* ((task-type (gpt-select-task-type))
-         ;; (additional-prompt (read-string "Enter additional text (optional): "))
-         (buffer (get-buffer-create "*GPT*"))
-         (region-text (buffer-substring-no-properties beg end))
-         (text (concat task-type "\n\n" region-text))
-         )
-    (with-current-buffer buffer
-      (unless (eq major-mode 'gpt-mode)
-        (gpt-mode))
-      (erase-buffer)
-      (insert text)
-      (gpt-truncate-history)
-      (gpt-run-buffer buffer task-type))
+;; (defun gpt-on-region (beg end)
+;;   "Run GPT command on region between BEG and END."
+;;   (interactive "r")
+;;   (let* ((region-text (buffer-substring-no-properties beg end))
+;;          (task-type (gpt-select-task-type))
+;;          (buffer (get-buffer-create "*GPT*"))
+;;          (text (concat task-type "\n\n" region-text))
+;;          )
+;;     (with-current-buffer buffer
+;;       (unless (eq major-mode 'gpt-mode)
+;;         (gpt-mode))
+;;       (erase-buffer)
+;;       (insert text)
+;;       (gpt-truncate-history)
+;;       (gpt-run-buffer buffer task-type))
 
-    (display-buffer buffer)
-    (copy-last-gpt-output-to-kill-ring)              
-    ))
+;;     (display-buffer buffer)
+;;     ;; (copy-last-gpt-output-to-kill-ring)              
+;;     ))
+
+
 
 
 (defun copy-last-gpt-output-to-kill-ring ()
@@ -188,8 +239,14 @@ Use `gpt-script-path' as the executable and pass the other arguments as a list."
   (interactive)
   (kill-buffer (current-buffer)))
 
+(defun hide-gpt-buffer ()
+  (interactive)
+  (when (get-buffer "*GPT*")
+    (delete-window (get-buffer-window "*GPT*"))))
+
+;; (define-key gpt-mode-map (kbd "C-S-k") 'hide-gpt-buffer)
 (define-key gpt-mode-map (kbd "q") nil)
-(define-key gpt-mode-map (kbd "C-q") 'gpt-quit)
+
 
 (provide 'emacs-gpt)
 

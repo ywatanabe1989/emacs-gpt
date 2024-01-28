@@ -1,1 +1,6 @@
 history.json
+.old
+*.old
+*.old/
+**Zone.Identifier
+

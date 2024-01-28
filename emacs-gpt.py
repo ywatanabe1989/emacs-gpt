@@ -1,9 +1,10 @@
 import argparse
-import openai
-from openai import OpenAI
 import json
 import os
 import time
+
+import openai
+from openai import OpenAI
 
 INSTRUCTION_DEBUG = """
     You are a sophisticated programmer. Please debug my code below, aligning with the following rules.
@@ -33,8 +34,7 @@ INSTRUCTION_REFACTOR = """
     Now, the code to refactor is as below:
     """
 
-INSTRUCTION_SCIWRITE = \
-    """
+INSTRUCTION_SCIWRITE = """
     You are an esteemed professor in the scientific field, based in the United States.
     The subsequent passages originate from a student whose first language is not English.
     Please proofread them with following the rules below.
@@ -62,18 +62,38 @@ INSTRUCTION_SCIWRITE = \
     Now, the original manuscript to be revised is as follows:
     """
 
-INSTRUCTION_CORRECT = \
-    """
+INSTRUCTION_CORRECT = """
     Since I am not a native English speaker, please correct my English.
     Do not include any messages nor comments as I can not discern them from your revision.
     Now, my sentences are below:
+    """
+
+INSTRUCTION_CS = """
+    I am currently working on a C# project to develop a GUI application. The initial version of the application was developed by a software company using Visual Studio Code nor Visual Studio, although Visual Studio was used in the original work of the software company. However, I am newbee in C# and prefer not to use VS Code, as I am interested in learning C# through Emacs and the shell, particularly within the Windows Subsystem for Linux (WSL) environment. I seek guidance to modify the existing C# code from the baseline application to enhance the user interface and make it more user-friendly.
+
+    Now, dotnet is installed like this:
+    $ dotnet --list-sdks # 8.0.101 [/usr/share/dotnet/sdk]
+
+    Please guide me with the following situation:
+    """
+
+INSTRUCTION_DOCSTRING = """
+    Please include docstrings.
+    Especially, the format should be Arguments, Attributes for classes, Return, data types, data shapes, and references.
+    Numpy or Torch should be clear.
+    If it's possible, please implement the function to work both on numpy.array, pytorch.tensor, and even pandasDataFrame.
+    If one of them can work, please add suffix like compute_fft_np, compute_fft_torch, or compute_fft_df.
+    Also, please tell me if more appropriate name can be. In this case, please implement obsolete warning for future compatibility.
+
     """
 
 INSTRUCTION_PROMPTS = {
     "Fix": INSTRUCTION_DEBUG,
     "SciWrite": INSTRUCTION_SCIWRITE,
     "Correct": INSTRUCTION_CORRECT,
-    "Refactor": INSTRUCTION_REFACTOR,        
+    "Refactor": INSTRUCTION_REFACTOR,
+    "C#": INSTRUCTION_CS,
+    "Docstring": INSTRUCTION_DOCSTRING,
 }
 
 
@@ -96,8 +116,7 @@ def run_gpt(
     prompt = INSTRUCTION_PROMPTS.get(task_type, task_type) + prompt
 
     # SciWrite is run on gpt-4
-    engine = {"SciWrite": "gpt-4"
-              }.get(task_type, engine)
+    engine = {"SciWrite": "gpt-4"}.get(task_type, engine)
 
     # Load the history
     if api_type == "chat":
@@ -137,7 +156,6 @@ def run_gpt(
                 "content": response.choices[0].message.content,
             }
         )
-            
 
     else:
         response = client.chat.completions.create(

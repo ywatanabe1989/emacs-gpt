@@ -20,7 +20,10 @@
 (defvar gpt-script-path (expand-file-name "emacs-gpt.py" (file-name-directory (or load-file-name buffer-file-name)))
   "The path to the Python script used by gpt.el.")
 
-(defvar gpt-openai-engine "gpt-4"
+;; (defvar gpt-openai-engine "gpt-4-0125-preview"
+;;   "The OpenAI engine to use.")
+
+(defvar gpt-openai-engine "gpt-4-turbo-preview"
   "The OpenAI engine to use.")
 
 (defvar gpt-openai-max-tokens "2000"
@@ -53,20 +56,6 @@
 
 \\{gpt-mode-map}")
 
-
-
-;; if initial-input is f, return Fix
-;; (defun gpt-select-task-type (&optional initial-input)
-;;   "Prompt the user to select a task type for the GPT model after a short delay.
-;; If INITIAL-INPUT is non-nil, it's used as the initial input for the prompt."
-;;   (interactive)
-;;   (unless (minibufferp)
-;;     (let ((task-type (read-string "Enter task type (f)ix / (r)efactor /(s)ciwrite / (c)orrect / (d)ocstring or custom: " initial-input)))
-;;       (if (not (string-empty-p task-type))
-;;           task-type
-;;         (message "No task type selected; defaulting to custom.")
-;;         "custom"))))
-
 (defun gpt-select-task-type (&optional initial-input)
   "Prompt the user to select a task type for the GPT model after a short delay.
 If INITIAL-INPUT is non-nil, it's used as the initial input for the prompt."
@@ -76,31 +65,44 @@ If INITIAL-INPUT is non-nil, it's used as the initial input for the prompt."
       (cond
        ((string= task-type "f") "Fix")
        ((string= task-type "r") "Refactor")
-       ((string= task-type "s") "Sciwrite")
+       ((string= task-type "s") "SciWrite")
        ((string= task-type "c") "Correct")
-       ((string= task-type "d") "Docstring")                     
+       ((string= task-type "d") "Docstring")
+       ((string= task-type "e") "Email")                                   
        ((not (string-empty-p task-type)) task-type)
        (t
         (message "No task type selected; defaulting to custom.")
         "custom")))))
 
 
-
-
-;; (add-hook 'gpt-mode-hook (lambda () (ivy-mode -1)))
-;; (add-hook 'gpt-mode-hook (lambda () (auto-composition-mode -1)))
-;; (add-hook 'gpt-mode-hook (lambda () (column-number-mode -1)))
-;; (add-hook 'gpt-mode-hook (lambda () (counsel-mode -1)))
-;; (add-hook 'gpt-mode-hook (lambda () (cua-mode -1)))
-
+;; (defun gpt-on-region (beg end)
+;;   "Run GPT command on region between BEG and END."
+;;   (interactive "r")
+;;   (let* ((region-text (buffer-substring-no-properties beg end))
+;;          (sleep-for 1.0)         
+;;          (task-type (gpt-select-task-type))
+;;          (buffer (get-buffer-create "*GPT*"))
+;;          (text (concat task-type "\n\n" region-text)))
+;;     (with-current-buffer buffer
+;;       (unless (eq major-mode 'gpt-mode)
+;;         (gpt-mode))
+;;       (erase-buffer)
+;;       (insert text)
+;;       (gpt-truncate-history))
+;;     ;; If the task type is nil or empty, don't run the buffer
+;;     (unless (string-empty-p task-type)
+;;       (gpt-run-buffer buffer task-type)
+;;       (display-buffer buffer))))
 (defun gpt-on-region (beg end)
-  "Run GPT command on region between BEG and END."
-  (interactive "r")
-  ;; (ivy-mode -1)
-  ;; (auto-composition-mode -1)
-  ;; (consel-mode - 1)
-  ;; (cua-mode -1)
-  (let* ((region-text (buffer-substring-no-properties beg end))
+  "Run GPT command on region between BEG and END, or pass nothing if no region is selected."
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end)) ; If region is selected, use it
+     (list nil nil))) ; If not, pass nil for both BEG and END
+  (let* ((region-text (if (and beg end) ; Check if BEG and END are non-nil
+                          (buffer-substring-no-properties beg end)
+                        "")) ; If nil, set region-text to an empty string
+         (sleep-for 1.0)         
          (task-type (gpt-select-task-type))
          (buffer (get-buffer-create "*GPT*"))
          (text (concat task-type "\n\n" region-text)))

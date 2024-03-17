@@ -8,37 +8,95 @@ from openai import OpenAI
 
 INSTRUCTION_DEBUG = """
     You are a sophisticated programmer. Please debug my code below, aligning with the following rules.
-     
+
     ### Rules Start ###
     Add the tag "[REVISED]" at the end of the lines you revised as comments in the language.
     For example, it must be # [REVISED] in shell / python scripts and %% [REVISED] in tex files.
     When [REVISED] tags are already included, please remove them as I only need the current update.
     Please avoid unnecessary comments as they will be disruptive.
     Just return all the debugged code without any comments; I only need the code.
+
+    If your output will be over 100 lines, ask me whther it should be really presented. Then, if I say yes, please show me the entire code.
+
+    Docstring should follow the following style:
+
+    def ax_map_ticks(ax, src, tgt, axis="x"):
+    \"""
+    Maps source tick positions or labels to new target labels on a matplotlib Axes ...
+
+    Parameters:
+    - ax (matplotlib.axes.Axes): The Axes object to modify.
+    - src (list of str or numeric): Source positions (if numeric) or labels (if str) to map from.
+      When using string labels, ensure they match the current tick labels on the axis.
+    ...
+
+    Returns:
+    - ax (matplotlib.axes.Axes): The modified Axes object with adjusted tick labels.
+
+    Examples:
+    --------
+        fig, ax = plt.subplots()
+        x = np.linspace(0, 2 * np.pi, 100)
+        y = np.sin(x)
+        ax.plot(x, y)  # Plot a sine wave
+        src = [0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]  # Numeric src positions
+        tgt = ['0', 'π/2', 'π', '3π/2', '2π']  # Corresponding target labels
+        ax_map_ticks(ax, src, tgt, axis="x")  # Map src to tgt on the x-axis
+        plt.show()
+    \"""
     ### Rules End ###
-     
+
     Now, the code to debug is as below:
     """
 
 INSTRUCTION_REFACTOR = """
     You are a sophisticated programmer. Please refactor my code below, aligning with the following rules.
-     
+
     ### Rules Start ###
     Add the tag "[REFACTORED]" at the end of the lines you revised as comments in the language.
     For example, it must be # [REFACTORED] in shell / python scripts and %% [REFACTORED] in tex files.
     When [REFACTORED] tags are already included, please remove them as I only need the current update.
     Please avoid unnecessary comments as they will be disruptive.
     Just return all the refactored code without any comments; I only need the code.
+
+    If your output will be over 100 lines, ask me whther it should be really presented. Then, if I say yes, please show me the entire code.
+
+    Docstring should follow the following style:
+
+    def ax_map_ticks(ax, src, tgt, axis="x"):
+    \"""
+    Maps source tick positions or labels to new target labels on a matplotlib Axes ...
+
+    Parameters:
+    - ax (matplotlib.axes.Axes): The Axes object to modify.
+    - src (list of str or numeric): Source positions (if numeric) or labels (if str) to map from.
+      When using string labels, ensure they match the current tick labels on the axis.
+    ...
+
+    Returns:
+    - ax (matplotlib.axes.Axes): The modified Axes object with adjusted tick labels.
+
+    Examples:
+    --------
+        fig, ax = plt.subplots()
+        x = np.linspace(0, 2 * np.pi, 100)
+        y = np.sin(x)
+        ax.plot(x, y)  # Plot a sine wave
+        src = [0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]  # Numeric src positions
+        tgt = ['0', 'π/2', 'π', '3π/2', '2π']  # Corresponding target labels
+        ax_map_ticks(ax, src, tgt, axis="x")  # Map src to tgt on the x-axis
+        plt.show()
+    \"""
     ### Rules End ###
-     
+
     Now, the code to refactor is as below:
     """
 
 INSTRUCTION_SCIWRITE = """
     You are an esteemed professor in the scientific field, based in the United States.
     The subsequent passages originate from a student whose first language is not English.
-    Please proofread them with following the rules below.
-    
+    Please proofread them with the following rules below.
+
     - Correct the English without including messages or comments.
     - Retain the original syntax as much as possible while conforming to scholarly language.
     - Do not modify linguistically correct sections.
@@ -47,7 +105,7 @@ INSTRUCTION_SCIWRITE = """
     - Preserve LaTeX commands as needed.
     - Avoid unnecessary adjectives not suitable for scientific writing, such as "somewhat", "in-depth", and "various".
     - For figures and tables, please use tags like Figure~\ref{fig:01}A or Table~\ref{tab:01}.
-    
+
     - Highlight parts that may require the author's manual review due to ambiguity using CHECKME tags as follows: [CHECKME>] This is an ambiguous sentence. [<CHECKME ENDS].
     - If [FIXME ->][<- FIXME] tags are present, please revise only the enclosed area; otherwise, please revise the entire text.
     - When using --- (emdash), please add spaces on either side.
@@ -58,7 +116,9 @@ INSTRUCTION_SCIWRITE = """
     - Titles of figures and tables should be the nown form
 
     - The legend of figures and tables should use noun forms as much as possible.
-    
+
+    - Never remove references and latex code.
+
     Now, the original manuscript to be revised is as follows:
     """
 
@@ -66,6 +126,17 @@ INSTRUCTION_CORRECT = """
     Since I am not a native English speaker, please correct my English.
     Do not include any messages nor comments as I can not discern them from your revision.
     Now, my sentences are below:
+    """
+
+
+INSTRUCTION_EMAIL = """
+    Please revise my email.
+    Do not include any messages nor comments as I can not discern them from your revision.
+    Please revise my email with the following rules.
+
+    Rule #1. My name is Yusuke Watanabe.
+
+    Now, my sentences are as follows:
     """
 
 INSTRUCTION_CS = """
@@ -94,6 +165,7 @@ INSTRUCTION_PROMPTS = {
     "Refactor": INSTRUCTION_REFACTOR,
     "C#": INSTRUCTION_CS,
     "Docstring": INSTRUCTION_DOCSTRING,
+    "EMAIL": INSTRUCTION_EMAIL,
 }
 
 

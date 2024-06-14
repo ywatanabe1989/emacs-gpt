@@ -1,6 +1,10 @@
 history.json
+history_all.json
+mngs_repo
 .old
 *.old
 *.old/
 **Zone.Identifier
+env
+
 
